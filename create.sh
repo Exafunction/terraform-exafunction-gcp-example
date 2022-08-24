@@ -3,26 +3,27 @@ set -euxo pipefail
 
 # Get directory of this script
 ROOT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-TERRAFORM_EXAFUNCTION_GCP_PREFIX="gcp"
-TERRAFORM_EXAFUNCTION_KUBE_PREFIX="kube"
-
-# Get shell variables from config.gcs.tfbackend
-source $ROOT_DIR/config.gcs.tfbackend
+REMOTE_STATE_GCP_PREFIX="gcp"
+REMOTE_STATE_KUBE_PREFIX="kube"
 
 # Apply remote-state Terraform module
 cd $ROOT_DIR/remote-state
-terraform init
+terraform init \
+    -reconfigure
 terraform apply \
-    -var-file=$ROOT_DIR/config.gcs.tfbackend \
     -var-file $ROOT_DIR/config.tfvars \
     -compact-warnings \
     -auto-approve
 
+# Get remote state output variables.
+REMOTE_STATE_BUCKET=$(terraform output -raw bucket)
+
 # Apply gcp Terraform module
 cd $ROOT_DIR/gcp
 terraform init \
-    -backend-config=$ROOT_DIR/config.gcs.tfbackend \
-    -backend-config="prefix=$TERRAFORM_EXAFUNCTION_GCP_PREFIX"
+    -backend-config="bucket=$REMOTE_STATE_BUCKET" \
+    -backend-config="prefix=$REMOTE_STATE_GCP_PREFIX" \
+    -reconfigure
 terraform apply \
     -var-file $ROOT_DIR/config.tfvars \
     -compact-warnings \
@@ -31,11 +32,12 @@ terraform apply \
 # Apply kube Terraform module
 cd $ROOT_DIR/kube
 terraform init \
-    -backend-config=$ROOT_DIR/config.gcs.tfbackend \
-    -backend-config="prefix=$TERRAFORM_EXAFUNCTION_KUBE_PREFIX"
+    -backend-config="bucket=$REMOTE_STATE_BUCKET" \
+    -backend-config="prefix=$REMOTE_STATE_KUBE_PREFIX" \
+    -reconfigure
 terraform apply \
     -var-file $ROOT_DIR/config.tfvars \
     -var="values_file_path=$ROOT_DIR/values.yaml" \
-    -var="remote_state_config={\"bucket\":\"$bucket\",\"prefix\":\"$TERRAFORM_EXAFUNCTION_GCP_PREFIX\"}" \
+    -var="remote_state_config={\"bucket\":\"$REMOTE_STATE_BUCKET\",\"prefix\":\"$REMOTE_STATE_GCP_PREFIX\"}" \
     -compact-warnings \
     -auto-approve
