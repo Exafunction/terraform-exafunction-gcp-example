@@ -1,0 +1,2 @@
+# Name of GCS bucket used to store Terraform remote state.
+bucket="terraform-exafunction"
