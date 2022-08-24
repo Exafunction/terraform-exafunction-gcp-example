@@ -18,12 +18,13 @@ variable "region" {
   }
 }
 
-variable "bucket" {
-  description = "Name of the GCS bucket to use for storing terraform state."
+variable "remote_state_bucket_suffix" {
+  description = "Optional suffix for the GCS bucket to use for storing terraform state."
   type        = string
+  default     = ""
 
   validation {
-    condition     = can(regex("^[a-z0-9\\.\\-]{3,63}$", var.bucket))
-    error_message = "Invalid GCS bucket name format."
+    condition     = can(regex("^[a-z0-9\\.\\-]{0,33}$", var.remote_state_bucket_suffix))
+    error_message = "Invalid GCP bucket suffix format."
   }
 }

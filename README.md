@@ -53,9 +53,6 @@ This file contains the configuration for the Terraform modules. Users should mod
 ### [`values.yaml`](/values.yaml)
 Users should modify this file to provide the image names for ExaDeploy system components. These image names should be in the release provided by Exafunction.
 
-### [`config.gcs.tfbackend`](/config.gcs.tfbackend)
-This file contains the configuration for the GCS backend used to manage [Terraform state](https://www.terraform.io/language/state). Reasonable defaults are provided and users can modify as needed. Note that this GCS bucket **should not** already exist as its creation and management will be handled by Terraform.
-
 ## Create
 After finishing configuration, run
 ```bash
@@ -73,9 +70,9 @@ To get these addresses, run these commands from the repository's root directory:
 ### Update Local Kubeconfig
 ```bash
 gcloud container clusters get-credentials \
-    --project $(terraform -chdir=gcp output project | tr -d '"') \
-    --region $(terraform -chdir=gcp output region | tr -d '"') \
-    $(terraform -chdir=gcp output cluster_id | tr -d '"')
+    --project $(terraform -chdir=gcp output -raw project) \
+    --region $(terraform -chdir=gcp output -raw region) \
+    $(terraform -chdir=gcp output -raw cluster_id)
 ```
 
 ### Module Repository
