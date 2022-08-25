@@ -58,12 +58,13 @@ variable "vpc_peering_config" {
 }
 
 variable "gpu_node_config" {
-  description = "GPU node configuration. `machine_type` is the GCE machine type to use for the GPU nodes. `min_gpu_nodes` and `max_gpu_nodes` define the minimum and maximum number of nodes in the GPU node pool. `accelerator_type` is the type of the GPU accelerator to use. `node_zones` is the list of zones for the GPU node pool. Zones must be within the same region as the cluster and must have accelerators of `accelerator_type` available."
+  description = "GPU node configuration. `machine_type` is the GCE machine type to use for the GPU nodes. `min_gpu_nodes` and `max_gpu_nodes` define the minimum and maximum number of nodes in the GPU node pool. `accelerator_type` is the type of the GPU accelerator to use. `accelerator_count` is the number of accelerators to attach. `node_zones` is the list of zones for the GPU node pool. Zones must be within the same region as the cluster and must have accelerators of `accelerator_type` available."
   type = object({
     machine_type     = string
     min_gpu_nodes    = number
     max_gpu_nodes    = number
     accelerator_type = string
+    accelerator_count = number
     node_zones       = list(string)
   })
   default = {
@@ -71,6 +72,7 @@ variable "gpu_node_config" {
     min_gpu_nodes    = 1
     max_gpu_nodes    = 10
     accelerator_type = "nvidia-tesla-t4"
+    accelerator_count = 1
     node_zones       = ["us-west1-a", "us-west1-b"]
   }
 }

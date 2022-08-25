@@ -26,7 +26,7 @@ resource "google_compute_subnetwork" "subnet" {
 }
 
 module "exafunction" {
-  source                        = "https://storage.googleapis.com/exafunction-dist/terraform-exafunction-gcp-341261e.tar.gz//terraform-exafunction-gcp-341261e"
+  source                        = "https://storage.googleapis.com/exafunction-dist/terraform-exafunction-gcp-629741c.tar.gz//terraform-exafunction-gcp-629741c"
   cluster_name                  = local.cluster_name
   region                        = var.region
   vpc_name                      = google_compute_network.vpc.name
@@ -40,6 +40,7 @@ module "exafunction" {
     min_capacity     = var.gpu_node_config.min_gpu_nodes
     max_capacity     = var.gpu_node_config.max_gpu_nodes
     node_zones       = var.gpu_node_config.node_zones
+    accelerator_count = var.gpu_node_config.accelerator_count
     accelerator_type = var.gpu_node_config.accelerator_type
   }]
 }

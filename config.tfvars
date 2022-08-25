@@ -20,11 +20,12 @@ vpc_peering_config = {
 
 # Configuration for GPU nodes.
 gpu_node_config = {
-  machine_type     = "n1-standard-4"
-  min_gpu_nodes    = 1
-  max_gpu_nodes    = 10
-  accelerator_type = "nvidia-tesla-t4"
-  node_zones       = ["us-west1-a", "us-west1-b"]
+  machine_type      = "n1-standard-4"
+  min_gpu_nodes     = 1
+  max_gpu_nodes     = 10
+  accelerator_type  = "nvidia-tesla-t4"
+  accelerator_count = 1
+  node_zones        = ["us-west1-a", "us-west1-b"]
 }
 
 # API key used to identify the company to Exafunction.
