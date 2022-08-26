@@ -44,7 +44,7 @@ This file contains the configuration for the Terraform modules. Users should mod
     * `min_gpu_nodes`: The minimum number of GPU nodes to create.
     * `max_gpu_nodes`: The maximum number of GPU nodes to create.
     * `accelerator_type`: The type of GPU accelerator to use. If you are not sure which to use, we recommend `nvidia-tesla-t4`.
-    * `accelerator_count`: The number of GPUs to use. If you are not sure which to use, we recommend `1`.
+    * `accelerator_count`: The number of accelerators to attach to each GPU node. If you are not sure which to use, we recommend `1`.
     * `node_zones`: The zones to create the GPU nodes in. Zones must be within the same region as the cluster and must have accelerators of `accelerator_type` available. To check which zones in the region have available accelerators, check the [GCP GPU regions and zones availability page](https://cloud.google.com/compute/docs/gpus/gpu-regions-zones#gpu_regions_and_zones) or run `gcloud compute accelerator-types list`.
 * `api_key`: The API key used to identify your company to Exafunction.
     * This should be provided by Exafunction.
