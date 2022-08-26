@@ -76,3 +76,9 @@ variable "gpu_node_config" {
     node_zones       = ["us-west1-a", "us-west1-b"]
   }
 }
+
+variable "allow_ssh" {
+  description = "Allow ssh into instances in the VPC."
+  type        = bool
+  default     = false
+}

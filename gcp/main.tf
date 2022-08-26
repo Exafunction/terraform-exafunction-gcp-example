@@ -25,6 +25,22 @@ resource "google_compute_subnetwork" "subnet" {
   }
 }
 
+# Enable SSH for instances.
+resource "google_compute_firewall" "rules" {
+  count = var.allow_ssh ? 1 : 0
+
+  name        = "exafunction-allow-ssh"
+  network     = google_compute_network.vpc.self_link
+  description = "Allow SSH to Exafunction instances"
+
+  allow {
+    protocol = "tcp"
+    ports = ["22"]
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+}
+
 module "exafunction" {
   source                        = "https://storage.googleapis.com/exafunction-dist/terraform-exafunction-gcp-629741c.tar.gz//terraform-exafunction-gcp-629741c"
   cluster_name                  = local.cluster_name
