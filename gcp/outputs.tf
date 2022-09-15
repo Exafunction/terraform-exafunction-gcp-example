@@ -8,17 +8,28 @@ output "region" {
   value       = var.region
 }
 
-output "cluster_id" {
-  description = "ID of the GKE cluster."
-  value       = module.exafunction.cluster_id
+output "cluster_name" {
+  description = "Name of the GKE cluster."
+  value       = module.exafunction_cluster.cluster_name
 }
 
-output "vpc_name" {
-  description = "Name of the VPC."
-  value       = google_compute_network.vpc.name
+output "exafunction_network" {
+  description = "Exafunction network module."
+  value       = module.exafunction_network
 }
 
-output "vpc_self_link" {
-  description = "Self link for the VPC."
-  value       = google_compute_network.vpc.self_link
+output "exafunction_cluster" {
+  description = "Exafunction cluster module."
+  value       = module.exafunction_cluster
+}
+
+output "exafunction_module_repo_backend" {
+  description = "Exafunction module repository backend module."
+  value       = module.exafunction_module_repo_backend
+  sensitive   = true
+}
+
+output "exafunction_peering" {
+  description = "Exafunction peering module."
+  value       = module.exafunction_peering
 }

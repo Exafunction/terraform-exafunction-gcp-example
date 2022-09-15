@@ -3,7 +3,7 @@ provider "google" {
   region  = var.region
 }
 
-data "terraform_remote_state" "cluster" {
+data "terraform_remote_state" "cloud" {
   backend = "gcs"
   config = {
     bucket = var.remote_state_config.bucket
@@ -14,8 +14,8 @@ data "terraform_remote_state" "cluster" {
 data "google_client_config" "provider" {}
 
 data "google_container_cluster" "cluster" {
-  name     = data.terraform_remote_state.cluster.outputs.cluster_id
-  location = data.terraform_remote_state.cluster.outputs.region
+  name     = data.terraform_remote_state.cloud.outputs.cluster_name
+  location = data.terraform_remote_state.cloud.outputs.region
 }
 
 provider "kubernetes" {

@@ -1,6 +1,6 @@
 variable "project" {
   description = "GCP project ID."
-  type    = string
+  type        = string
 
   validation {
     condition     = can(regex("^[a-z0-9\\-]{6,30}$", var.project))
@@ -15,16 +15,5 @@ variable "region" {
   validation {
     condition     = can(regex("^[a-z]+-[a-z]+[0-9]$", var.region))
     error_message = "Invalid GCP region format."
-  }
-}
-
-variable "remote_state_bucket_suffix" {
-  description = "Optional suffix for the GCS bucket to use for storing terraform state."
-  type        = string
-  default     = ""
-
-  validation {
-    condition     = can(regex("^[a-z0-9\\.\\-]{0,33}$", var.remote_state_bucket_suffix))
-    error_message = "Invalid GCP bucket suffix format."
   }
 }
