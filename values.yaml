@@ -1,7 +1,1 @@
-# Specify image tags for ExaDeploy components.
-scheduler:
-  image: gcr.io/exafunction/scheduler:<SCHEDULER_IMAGE_TAG>
-moduleRepository:
-  image: gcr.io/exafunction/module_repository:<MODULE_REPOSITORY_IMAGE_TAG>
-runner:
-  image: gcr.io/exafunction/runner@sha256:<RUNNER_SHA>
+# Additional values yaml to configure ExaDeploy Helm chart.

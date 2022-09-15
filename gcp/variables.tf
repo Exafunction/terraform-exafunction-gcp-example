@@ -1,6 +1,6 @@
 variable "project" {
   description = "GCP project ID."
-  type = string
+  type        = string
 
   validation {
     condition     = can(regex("^[a-z0-9\\-]{6,30}$", var.project))
@@ -18,28 +18,87 @@ variable "region" {
   }
 }
 
-variable "cluster_suffix" {
-  description = "Unique suffix to add to the cluster (and VPC). Useful if trying to spin up multiple Exafunction clusters."
+variable "unique_suffix" {
+  description = "Unique suffix to add to the GCP resources. Useful if trying to spin up multiple Exafunction clusters."
   type        = string
   default     = ""
 
   validation {
-    condition     = can(regex("^[a-z0-9\\-]*$", var.cluster_suffix))
-    error_message = "Invalid cluster suffix format."
+    condition     = can(regex("^[a-z0-9\\-]*$", var.unique_suffix))
+    error_message = "Invalid unique suffix format."
   }
 }
 
 variable "vpc_ip_range_config" {
-  description = "IP ranges for the VPC's subnet. If using VPC peering, these should be disjoint from the IP ranges of the peered VPC's subnets. `instances_primary_range` is the primary IP range for the subnet and used for all node IP addresses. `pods_secondary_range` is a secondary IP range for the subnet and used for all pod IP addresses. `services_secondary_range` is a secondary IP range for the subnet and used for all service IP addresses. It is recommended to use /20 ranges for `instances_primary_range` and `services_secondary_range` and a /16 range for `pods_secondary_range`."
+  description = "IP ranges for the VPC's subnet. If using VPC peering, these should be disjoint from the IP ranges of the peered VPC's subnets. `nodes_ip_range` is the primary IP range for the subnet and used for all node IP addresses. `pods_ip_range` is a secondary IP range for the subnet and used for all pod IP addresses. `services_ip_range` is a secondary IP range for the subnet and used for all service IP addresses. It is recommended to use /20 ranges for `nodes_ip_range` and `services_ip_range` and a /16 range for `pods_ip_range`."
   type = object({
-    instances_primary_range  = string
-    pods_secondary_range     = string
-    services_secondary_range = string
+    nodes_ip_range    = string
+    pods_ip_range     = string
+    services_ip_range = string
   })
   default = {
-    instances_primary_range  = "10.0.0.0/20",
-    pods_secondary_range     = "10.1.0.0/16",
-    services_secondary_range = "10.2.0.0/20",
+    nodes_ip_range    = "10.0.0.0/20",
+    pods_ip_range     = "10.1.0.0/16",
+    services_ip_range = "10.2.0.0/20",
+  }
+}
+
+variable "allow_ssh" {
+  description = "Allow ssh into instances in the VPC."
+  type        = bool
+  default     = false
+}
+
+variable "runner_pools" {
+  description = "Configuration parameters for Exafunction runner node pools."
+  type = list(object({
+    # Node group suffix.
+    suffix = string
+    # Machine type to use.
+    machine_type = string
+    # One of (ON_DEMAND, PREEMPTIBLE, SPOT).
+    capacity_type = string
+    # Disk size (GB).
+    disk_size = number
+    # Minimum number of nodes per zone.
+    min_size = number
+    # Maximum number of nodes per zone.
+    max_size = number
+    # Type of accelerator to attach. If empty, no accelerator is attached.
+    accelerator_type = string
+    # The number of accelerators to attach.
+    accelerator_count = number
+    # List of zones for the Exafunction runner node pool. Zones must be within the same region as
+    # the cluster. For node pools with attached accelerators, must specify a list of zones where
+    # the accelerators are available. If empty, use the default set of zones for the region.
+    node_zones = list(string)
+    # Additional taints.
+    additional_taints = list(object({
+      key    = string
+      value  = string
+      effect = string
+    }))
+    # Additional labels.
+    additional_labels = map(string)
+  }))
+  default = [{
+    suffix            = "gpu"
+    machine_type      = "n1-standard-4"
+    capacity_type     = "ON_DEMAND"
+    disk_size         = 100
+    min_size          = 0
+    max_size          = 3
+    accelerator_type  = "nvidia-tesla-t4"
+    accelerator_count = 1
+    node_zones        = ["us-west1-a", "us-west1-b"]
+    additional_taints = []
+    additional_labels = {}
+  }]
+  validation {
+    condition = alltrue([
+      for runner_pool in var.runner_pools : contains(["ON_DEMAND", "PREEMPTIBLE", "SPOT"], runner_pool.capacity_type)
+    ])
+    error_message = "Capacity type must be one of [ON_DEMAND, PREEMPTIBLE, SPOT]."
   }
 }
 
@@ -55,30 +114,4 @@ variable "vpc_peering_config" {
     condition     = !var.vpc_peering_config.enabled || (length(var.vpc_peering_config.peer_vpc_name) > 0 && length(var.vpc_peering_config.peer_subnet_names) > 0)
     error_message = "`peer_vpc_name` and `peer_subnet_names` are required when VPC peering is enabled."
   }
-}
-
-variable "gpu_node_config" {
-  description = "GPU node configuration. `machine_type` is the GCE machine type to use for the GPU nodes. `min_gpu_nodes` and `max_gpu_nodes` define the minimum and maximum number of nodes in the GPU node pool. `accelerator_type` is the type of the GPU accelerator to use. `accelerator_count` is the number of accelerators to attach. `node_zones` is the list of zones for the GPU node pool. Zones must be within the same region as the cluster and must have accelerators of `accelerator_type` available."
-  type = object({
-    machine_type     = string
-    min_gpu_nodes    = number
-    max_gpu_nodes    = number
-    accelerator_type = string
-    accelerator_count = number
-    node_zones       = list(string)
-  })
-  default = {
-    machine_type     = "n1-standard-4"
-    min_gpu_nodes    = 1
-    max_gpu_nodes    = 10
-    accelerator_type = "nvidia-tesla-t4"
-    accelerator_count = 1
-    node_zones       = ["us-west1-a", "us-west1-b"]
-  }
-}
-
-variable "allow_ssh" {
-  description = "Allow ssh into instances in the VPC."
-  type        = bool
-  default     = false
 }

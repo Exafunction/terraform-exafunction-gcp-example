@@ -1,82 +1,68 @@
 locals {
-  cluster_suffix = var.cluster_suffix == "" ? "" : "-${var.cluster_suffix}"
-  cluster_name   = "exafunction-cluster${local.cluster_suffix}"
+  unique_suffix = var.unique_suffix == "" ? "" : "-${var.unique_suffix}"
+  cluster_name  = "exafunction-cluster${local.unique_suffix}"
 }
 
-resource "google_compute_network" "vpc" {
-  name                    = "exafunction-vpc${local.cluster_suffix}"
-  auto_create_subnetworks = "false"
+module "exafunction_network" {
+  source  = "Exafunction/exafunction-cloud/gcp//modules/network"
+  version = "0.1.0"
+
+  vpc_name    = "exafunction-vpc${local.unique_suffix}"
+  subnet_name = "exafunction-subnet${local.unique_suffix}"
+  region      = var.region
+
+  nodes_ip_range    = var.vpc_ip_range_config.nodes_ip_range
+  pods_ip_range     = var.vpc_ip_range_config.pods_ip_range
+  services_ip_range = var.vpc_ip_range_config.services_ip_range
+
+  allow_ssh = var.allow_ssh
 }
 
-resource "google_compute_subnetwork" "subnet" {
-  name          = "exafunction-subnet${local.cluster_suffix}"
-  region        = var.region
-  network       = google_compute_network.vpc.name
-  ip_cidr_range = var.vpc_ip_range_config.instances_primary_range
+module "exafunction_cluster" {
+  source  = "Exafunction/exafunction-cloud/gcp//modules/cluster"
+  version = "0.1.0"
 
-  secondary_ip_range {
-    range_name    = "pod-ip-range"
-    ip_cidr_range = var.vpc_ip_range_config.pods_secondary_range
-  }
+  cluster_name = "exafunction-cluster${local.unique_suffix}"
+  region       = var.region
 
-  secondary_ip_range {
-    range_name    = "service-ip-range"
-    ip_cidr_range = var.vpc_ip_range_config.services_secondary_range
-  }
+  vpc_name                      = module.exafunction_network.vpc_name
+  subnet_name                   = module.exafunction_network.subnet_name
+  pods_secondary_range_name     = module.exafunction_network.pods_secondary_range_name
+  services_secondary_range_name = module.exafunction_network.services_secondary_range_name
+
+  runner_pools = var.runner_pools
 }
 
-# Enable SSH for instances.
-resource "google_compute_firewall" "rules" {
-  count = var.allow_ssh ? 1 : 0
+module "exafunction_module_repo_backend" {
+  source  = "Exafunction/exafunction-cloud/gcp//modules/module_repo_backend"
+  version = "0.1.0"
 
-  name        = "exafunction-allow-ssh"
-  network     = google_compute_network.vpc.self_link
-  description = "Allow SSH to Exafunction instances"
+  exadeploy_id = "exa-mrbe${local.unique_suffix}"
 
-  allow {
-    protocol = "tcp"
-    ports = ["22"]
-  }
-
-  source_ranges = ["0.0.0.0/0"]
-}
-
-module "exafunction" {
-  source                        = "https://storage.googleapis.com/exafunction-dist/terraform-exafunction-gcp-629741c.tar.gz//terraform-exafunction-gcp-629741c"
-  cluster_name                  = local.cluster_name
-  region                        = var.region
-  vpc_name                      = google_compute_network.vpc.name
-  vpc_id                        = google_compute_network.vpc.id
-  subnet_name                   = google_compute_subnetwork.subnet.name
-  pods_secondary_range_name     = "pod-ip-range"
-  services_secondary_range_name = "service-ip-range"
-  runner_pools = [{
-    suffix           = "gpu"
-    machine_type     = var.gpu_node_config.machine_type
-    min_capacity     = var.gpu_node_config.min_gpu_nodes
-    max_capacity     = var.gpu_node_config.max_gpu_nodes
-    node_zones       = var.gpu_node_config.node_zones
-    accelerator_count = var.gpu_node_config.accelerator_count
-    accelerator_type = var.gpu_node_config.accelerator_type
-  }]
+  vpc_id = module.exafunction_network.vpc_id
+  region = var.region
 }
 
 data "google_compute_network" "peer" {
+  count = var.vpc_peering_config.enabled ? 1 : 0
+
   name = var.vpc_peering_config.peer_vpc_name
 }
 
 data "google_compute_subnetwork" "peer_subnets" {
-  for_each = toset(var.vpc_peering_config.peer_subnet_names)
+  for_each = var.vpc_peering_config.enabled ? toset(var.vpc_peering_config.peer_subnet_names) : toset([])
   name     = each.key
 }
 
-module "vpc_peer" {
+module "exafunction_peering" {
   count = var.vpc_peering_config.enabled ? 1 : 0
 
-  source             = "./modules/vpc_peer"
-  unique_suffix      = local.cluster_suffix
-  vpc_self_link      = google_compute_network.vpc.self_link
-  peer_vpc_self_link = data.google_compute_network.peer.self_link
+  source  = "Exafunction/exafunction-cloud/gcp//modules/peering"
+  version = "0.1.0"
+
+  unique_suffix      = local.unique_suffix
+  vpc_self_link      = module.exafunction_network.vpc_self_link
+  peer_vpc_self_link = one(data.google_compute_network.peer).self_link
   peer_subnet_ip_ranges = flatten([
     for _, subnet in data.google_compute_subnetwork.peer_subnets : concat([subnet.ip_cidr_range], [for secondary_ip_range in subnet.secondary_ip_range : secondary_ip_range.ip_cidr_range])
   ])
